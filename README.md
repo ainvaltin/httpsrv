@@ -1,3 +1,5 @@
+[![Go Reference](https://pkg.go.dev/badge/github.com/ainvaltin/httpsrv.svg)](https://pkg.go.dev/github.com/ainvaltin/httpsrv)
+
 # httpsrv
 
 Package `httpsrv` implements minimalist "framework" to manage http server lifetime.
