@@ -1,4 +1,4 @@
-module ain/httpsrv/examples/errgroup
+module 	"github.com/ainvaltin/httpsrv/examples/errgroup"
 
 go 1.19
 

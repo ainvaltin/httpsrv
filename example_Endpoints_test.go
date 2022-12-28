@@ -1,7 +1,6 @@
 package httpsrv_test
 
 import (
-	"ain/httpsrv"
 	"context"
 	"fmt"
 	"net"
@@ -9,6 +8,8 @@ import (
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/ainvaltin/httpsrv"
 )
 
 func Example() {

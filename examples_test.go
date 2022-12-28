@@ -1,7 +1,6 @@
 package httpsrv_test
 
 import (
-	"ain/httpsrv"
 	"context"
 	"errors"
 	"fmt"
@@ -11,6 +10,8 @@ import (
 	"os/signal"
 	"testing"
 	"time"
+
+	"github.com/ainvaltin/httpsrv"
 )
 
 // example of a simple service which only has a http server (ie no need to use errgroup)
