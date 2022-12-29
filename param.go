@@ -44,9 +44,9 @@ func Endpoints(h http.Handler) ServerParam {
 }
 
 /*
-ShutdownTimeout sets timeout for graceful shutdown (ie context timeout for the [net/http.Server.Shutdown] call).
+ShutdownTimeout sets timeout for graceful shutdown (ie context timeout for the [http.Server.Shutdown] call).
 When not provided or duration is smaller than or equal to zero no graceful shutdown is attempted,
-all connections are closed immediately (ie [net/http.Server.Close] is used to stop the server).
+all connections are closed immediately (ie [http.Server.Close] is used to stop the server).
 
 Keep in mind that in "managed environment" (ie Kubernetes) the instance (pod) could still be killed
 by the orchestrator before this timeout is reached.
