@@ -38,7 +38,7 @@ func run(ctx context.Context, cfg Configuration) error {
 	})
 
 	g.Go(func() error {
-		return cron(ctx, cfg.MaxTickc())
+		return cron(ctx, cfg.MaxTicks())
 	})
 
 	return g.Wait()
@@ -70,11 +70,13 @@ type service struct {
 func (s *service) endpoints() http.Handler {
 	// any mux which implements http.Handler can be used, ie gin, echo, gorilla...
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		w.Write([]byte("hello world"))
-	})
+	mux.HandleFunc("/", s.helloWorld)
 
 	return mux
+}
+
+func (s *service) helloWorld(w http.ResponseWriter, req *http.Request) {
+	w.Write([]byte("hello world"))
 }
 
 // the http service specific configuration interface
@@ -84,7 +86,7 @@ type ServiceCfg interface {
 
 type Configuration interface {
 	ServiceCfg
-	MaxTickc() int
+	MaxTicks() int
 	Listener() net.Listener
 	HttpServer(http.Handler) http.Server
 }
@@ -115,7 +117,7 @@ func (c *srvConf) HttpServer(h http.Handler) http.Server {
 	}
 }
 
-func (c *srvConf) MaxTickc() int {
+func (c *srvConf) MaxTicks() int {
 	// in real life code would probably want to log error etc
 	if v, err := strconv.Atoi(os.Getenv("MAX_TICKS")); err == nil {
 		return v
