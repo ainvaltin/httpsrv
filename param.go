@@ -56,8 +56,8 @@ func ShutdownTimeout(to time.Duration) ServerParam {
 }
 
 /*
-TLS allows to start the server using [net/http.Server.ServeTLS].
-Alternatively the server's TLSConfig field can be assigned when passing it to [Run].
+TLS allows to start the server using [http.Server.ServeTLS].
+Alternatively the server's [http.Server.TLSConfig] field can be assigned when passing it to [Run].
 */
 func TLS(certFile, keyFile string) ServerParam {
 	return serverParam{func(cfg *serverConf) { cfg.certFile, cfg.keyFile = certFile, keyFile }}

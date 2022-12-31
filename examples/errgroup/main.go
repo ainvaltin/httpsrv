@@ -76,7 +76,7 @@ func (s *service) endpoints() http.Handler {
 }
 
 func (s *service) helloWorld(w http.ResponseWriter, req *http.Request) {
-	w.Write([]byte("hello world"))
+	fmt.Fprint(w, "Hello, World!")
 }
 
 // the http service specific configuration interface

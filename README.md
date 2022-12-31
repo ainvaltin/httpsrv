@@ -21,7 +21,7 @@ Simplest example of using this package:
 func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		w.Write([]byte("hello, world"))
+		fmt.Fprint(w, "Hello, World!")
 	})
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
