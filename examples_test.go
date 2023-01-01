@@ -19,7 +19,7 @@ func ExampleRun() {
 	// any mux which implements http.Handler can be used, ie gin, echo, gorilla...
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		w.Write([]byte("hello, world"))
+		fmt.Fprintf(w, "hello, world")
 	})
 
 	// context to manage server's lifetime - when interrupt signal is sent the
@@ -35,7 +35,7 @@ func ExampleRun() {
 // which the test needs to know in order to make request to it.
 func ExampleListener() {
 	// this would be a paratemer of a Test func ie "func TestXXX(t *testing.T)"
-	var t *testing.T
+	var t testing.T
 	// open listener on random free port
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {

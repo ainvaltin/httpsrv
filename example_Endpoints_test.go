@@ -45,7 +45,7 @@ func (s *service) endpoints() http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		w.Write([]byte("hello, world"))
+		fmt.Fprintf(w, "hello, world")
 	})
 
 	return mux
