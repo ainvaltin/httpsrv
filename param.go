@@ -68,7 +68,7 @@ LogError can be used to set the function which is used by the library (not the h
 errors (ie used when failing to start or stop the server - the first error is returned by the [Run]
 and consecutive ones are logged by this func).
 
-By default errors are logged to [os.Stderr].
+By default errors are logged to [os.Stderr]. If argument f is nil then it is ignored.
 */
 func LogError(f func(string, ...any)) ServerParam {
 	return serverParam{

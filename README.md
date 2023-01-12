@@ -54,3 +54,4 @@ See the [example project](./examples/errgroup/) for more.
 - option to shutdown in case of unhandled panic - by default http.Server just logs the
 panic and carries on but some argue that in case of unhandled panic service should always
 die and new instance started...
+- Drop the `LogError` parameter and use "wrapping multiple errors" instead (support coming with Go 1.20).

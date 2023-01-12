@@ -360,7 +360,7 @@ func Test_runServer(t *testing.T) {
 		}
 	})
 
-	t.Run("success", func(t *testing.T) {
+	t.Run("no errors to log", func(t *testing.T) {
 		logF, buf := logErrFunc()
 		ctx, cancel := context.WithCancel(context.Background())
 		stopCalled := false
