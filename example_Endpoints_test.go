@@ -52,7 +52,7 @@ func (s *service) endpoints() http.Handler {
 }
 
 type ServiceCfg interface {
-	// methods returning confing relevant to the service
+	// methods returning config relevant to the service
 }
 
 type Configuration interface {

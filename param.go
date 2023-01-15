@@ -34,7 +34,7 @@ func Listener(l net.Listener) ServerParam {
 Endpoints sets the HTTP request multiplexer for the server (Server.Handler field).
 
 Instead of using this parameter the Handler could be assigned in the Server parameter of the [Run]
-function but sometimes it is more convinient to set them separately - ie the [http.Server] is returned
+function but sometimes it is more convenient to set them separately - ie the [http.Server] is returned
 by configuration provider while http.Handler is implemented by a service struct.
 
 Endpoints overrides Handler set by the srv parameter of [Run]!

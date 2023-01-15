@@ -5,7 +5,7 @@
 Package `httpsrv` implements minimalist "framework" to manage http server lifetime.
 
 Setting up server and managing it's lifetime is repetitive and it is easy to
-introduce stuble bugs. This library aims to solve these problems while being
+introduce subtle bugs. This library aims to solve these problems while being
 router agnostic and "errgroup pattern" friendly.
 
 To a seasoned Go developer this might seem like too little functionality to warrant
@@ -34,12 +34,12 @@ func main() {
 
 ## errgroup pattern
 
-Simply put "errgroup pattern" is a organisation of the service code so that all
+Simply put "errgroup pattern" is a organization of the service code so that all
 subprocesses of the service are launched as members of the same
 [errgroup](https://pkg.go.dev/golang.org/x/sync/errgroup) and their lifetime is
 controlled by the context of the group. This means that when one of the group members
 exits with error the group's context gets cancelled and all other group members
-get signal to (gracefully) exit too. Group reports the first error as the reson
+get signal to (gracefully) exit too. Group reports the first error as the reason
 service stopped.
 
 Rules for a func starting a subprocess are:

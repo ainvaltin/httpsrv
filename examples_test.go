@@ -34,7 +34,7 @@ func ExampleRun() {
 // Listener parameter is useful for tests where server is running on a random port
 // which the test needs to know in order to make request to it.
 func ExampleListener() {
-	// this would be a paratemer of a Test func ie "func TestXXX(t *testing.T)"
+	// this would be a parameter of a Test func ie "func TestXXX(t *testing.T)"
 	var t testing.T
 	// open listener on random free port
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
