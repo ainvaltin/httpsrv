@@ -47,7 +47,7 @@ func run(ctx context.Context, cfg Configuration) error {
 /*
 cron is a example of possible subprocess which has it's lifetime controlled by context.
 */
-func cron(ctx context.Context, maxTickc int) error {
+func cron(ctx context.Context, maxTicks int) error {
 	cnt := 0
 	for {
 		select {
@@ -55,7 +55,7 @@ func cron(ctx context.Context, maxTickc int) error {
 			return ctx.Err()
 		case <-time.After(2 * time.Second):
 			fmt.Println("tick")
-			if cnt++; cnt == maxTickc {
+			if cnt++; cnt == maxTicks {
 				return fmt.Errorf("ticked %d times, that's enough", cnt)
 			}
 		}

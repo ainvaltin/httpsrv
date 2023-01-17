@@ -12,6 +12,76 @@ import (
 	"time"
 )
 
+func Test_WaitWithTimeout(t *testing.T) {
+	t.Parallel()
+
+	t.Run("wait returns nil before timeout", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		res := make(chan error)
+		go func() {
+			res <- WaitWithTimeout(ctx, time.Second, func() error { return nil })
+		}()
+		// cancel the "group ctx", this triggers the wait call with timeout
+		cancel()
+		select {
+		case err := <-res:
+			if err != nil {
+				t.Errorf("expected no error, got: %v", err)
+			}
+		case <-time.After(500 * time.Millisecond):
+			t.Error("WaitWithTimeout didn't return within timeout")
+		}
+	})
+
+	expectError := func(t *testing.T, err, expErr error) {
+		t.Helper()
+		if err != nil {
+			if !errors.Is(err, expErr) {
+				t.Errorf("expected error\n%v\nbut got\n%v", expErr, err)
+			}
+		} else {
+			t.Errorf("got nil error while expected to get error: %v", expErr)
+		}
+	}
+
+	t.Run("wait returns non-nil error before timeout", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		expErr := fmt.Errorf("error from wait")
+		res := make(chan error)
+		go func() {
+			res <- WaitWithTimeout(ctx, time.Second, func() error { return expErr })
+		}()
+		// cancel the "group ctx", this triggers the wait call with timeout
+		cancel()
+		select {
+		case err := <-res:
+			expectError(t, err, expErr)
+		case <-time.After(500 * time.Millisecond):
+			t.Error("WaitWithTimeout didn't return within timeout")
+		}
+	})
+
+	t.Run("wait blocks longer than timeout", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		res := make(chan error)
+		go func() {
+			res <- WaitWithTimeout(ctx, time.Second,
+				func() error {
+					time.Sleep(1500 * time.Millisecond)
+					return nil
+				})
+		}()
+		// cancel the "group ctx", this triggers the wait call with timeout
+		cancel()
+		select {
+		case err := <-res:
+			expectError(t, err, ErrWaitDeadlineExceeded)
+		case <-time.After(1100 * time.Millisecond):
+			t.Error("WaitWithTimeout didn't return within timeout")
+		}
+	})
+}
+
 func Test_ListenForQuitSignal(t *testing.T) {
 	t.Parallel()
 

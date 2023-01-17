@@ -55,3 +55,5 @@ See the [example project](./examples/errgroup/) for more.
 panic and carries on but some argue that in case of unhandled panic service should always
 die and new instance started...
 - Drop the `LogError` parameter and use "wrapping multiple errors" instead (support coming with Go 1.20).
+- `ListenForQuitSignal` and `WaitWithTimeout` should probably live in a separate package as these
+functions are not httpsrv specific but general "errgroup pattern" helpers.

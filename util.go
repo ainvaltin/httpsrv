@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 /*
@@ -52,5 +53,61 @@ func ListenForQuitSignal(ctx context.Context, sig ...os.Signal) error {
 		return ctx.Err()
 	case s := <-c:
 		return fmt.Errorf("%s: %w", s, ErrReceivedQuitSignal)
+	}
+}
+
+/*
+ErrWaitDeadlineExceeded is returned by [WaitWithTimeout] when the function it waits for to complete
+doesn't finish within given timeout.
+*/
+var ErrWaitDeadlineExceeded = errors.New("wait func didn't complete within timeout")
+
+/*
+WaitWithTimeout is a helper function to support wait with timeout when using "errgroup pattern".
+
+  - "ctx" is context of the waitgroup, it's being cancelled signals to start wait with timeout;
+  - "timeout" is the duration for how long to wait for the "wait" func to return before returning [ErrWaitDeadlineExceeded] error;
+  - "wait" is the Wait function of the group.
+
+The "wait" function will be called once the "ctx" is cancelled (it's Done chan is closed).
+When the "wait" function returns before timeout is reached error returned by it is returned by WaitWithTimeout.
+When timeout is reached before the "wait" function finishes WaitWithTimeout returns [ErrWaitDeadlineExceeded].
+
+WaitWithTimeout mustn't be a member of the group, it would be used instead of "plain group.Wait()" call.
+Example of using WaitWithTimeout to return from the "main run function" (which presumably will stop the service) even when
+all subprocesses haven't gracefully shut down after one second has elapsed since receiving the quit signal:
+
+	func run(ctx context.Context, cfg Configuration) error {
+		g, ctx := errgroup.WithContext(ctx)
+
+		g.Go(func() error { return httpsrv.ListenForQuitSignal(ctx) })
+
+		g.Go(func() error {
+			s := &service{cfg: cfg}
+			return httpsrv.Run(ctx, cfg.HttpServer(s.endpoints()))
+		})
+
+		return httpsrv.WaitWithTimeout(ctx, time.Second, g.Wait)
+	}
+
+Keep in mind that when timeout is reached the group members that haven't stopped will keep doing whatever they do,
+it is just that we do not wait for them to finish anymore!
+
+To use this function with [sync.WaitGroup] just wrap the g.Wait() call, ie
+
+	httpsrv.WaitWithTimeout(ctx, time.Second, func() error { g.Wait(); return nil })
+*/
+func WaitWithTimeout(ctx context.Context, timeout time.Duration, wait func() error) error {
+	<-ctx.Done()
+
+	rec := make(chan error, 1)
+
+	go func() { rec <- wait() }()
+
+	select {
+	case err := <-rec:
+		return err
+	case <-time.After(timeout):
+		return ErrWaitDeadlineExceeded
 	}
 }

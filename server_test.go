@@ -166,68 +166,6 @@ func Test_Run(t *testing.T) {
 			t.Errorf("unexpected content in error log:\n%s\n", s)
 		}
 	})
-
-	/*t.Run("handler panics", func(t *testing.T) {
-		ln, getf, err := srvLnAndGetFunc()
-		if err != nil {
-			t.Fatalf("failed to create listener: %v", err)
-		}
-		defer ln.Close()
-
-		logF, logBuf := logErrFunc()
-
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-		done := make(chan error, 1)
-		go func() {
-			done <- Run(ctx,
-				Listener(ln),
-				ShutdownTimeout(time.Second),
-				Endpoints(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					//panic("panic in the handler")
-					panic(http.ErrAbortHandler)
-
-				})),
-				LogError(logF),
-			)
-		}()
-
-		cliErr := make(chan error, 1)
-		go func() {
-			if rsp, err := getf(); err != nil {
-				cliErr <- err
-			} else {
-				cliErr <- fmt.Errorf("got unexpected response: %v", rsp)
-			}
-		}()
-
-		select {
-		case <-time.After(2 * time.Second):
-			t.Error("runServer didn't return within timeout")
-		case err := <-done:
-			// we stopped the server by cancelling the context so that's the error we expect
-			if err != context.Canceled {
-				t.Errorf("unexpected error: %v", err)
-			}
-		}
-
-		// server should die while the request is still in flight, should get error
-		select {
-		case <-time.After(2 * time.Second):
-			t.Error("client request didn't return within timeout")
-		case err := <-cliErr:
-			if err.Error() != `Get "http://`+ln.Addr().String()+`": EOF` {
-				t.Errorf("unexpected error: %v", err)
-			}
-		}
-
-		//getf()
-
-		// server exceeded shutdown timeout, should log error
-		if s := logBuf.String(); s != "" {
-			t.Errorf("unexpected content in error log:\n%s\n", s)
-		}
-	})//*/
 }
 
 func Test_runServer(t *testing.T) {
