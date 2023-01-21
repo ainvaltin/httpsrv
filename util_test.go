@@ -126,10 +126,45 @@ func Test_ListenForQuitSignal(t *testing.T) {
 			t.Errorf("unexpected return value:\n%s\n", s)
 		}
 	})
+
+	t.Run("syscall.SIGQUIT", func(t *testing.T) {
+		s, err := runTestCommand("TestSignalSIGQUIT")
+		if err != nil {
+			t.Fatalf("failed to run test: %v", err)
+		}
+		if s != `quit: received quit signal` {
+			t.Errorf("unexpected return value:\n%s\n", s)
+		}
+	})
+
+	t.Run("syscall.SIGQUIT unexpected", func(t *testing.T) {
+		s, err := runTestCommand("TestSignalSIGQUITunexpected")
+		if err != nil {
+			if err.Error() != `failed to run the command: exit status 2` {
+				t.Errorf("unexpected error returned by Run:\n%v\n", err)
+			}
+		}
+		if s != `` {
+			t.Errorf("unexpected return value:\n%s\n", s)
+		}
+	})
+
+	t.Run("syscall.SIGKILL", func(t *testing.T) {
+		// SIGKILL can't be caught/recovered from - run will exit with error
+		s, err := runTestCommand("TestSignalSIGKILL")
+		if err != nil {
+			if err.Error() != `failed to run the command: signal: killed` {
+				t.Errorf("unexpected error returned by Run:\n%v\n", err)
+			}
+		}
+		if s != `` {
+			t.Errorf("unexpected return value:\n%s\n", s)
+		}
+	})
 }
 
 func runTestCommand(testName string) (string, error) {
-	cmd := exec.Command(os.Args[0], "-test.run="+testName)
+	cmd := exec.Command(os.Args[0], "-test.run=^"+testName+"$")
 	cmd.Env = []string{"GO_TEST_PROCESS=1"}
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -154,10 +189,10 @@ func sendSignalToItself(sig os.Signal) error {
 	return nil
 }
 
-func testListenForQuitSignal(sig os.Signal) {
+func testListenForQuitSignal(sig os.Signal, listenFor ...os.Signal) {
 	done := make(chan error, 1)
 	go func() {
-		done <- ListenForQuitSignal(context.Background())
+		done <- ListenForQuitSignal(context.Background(), listenFor...)
 	}()
 	// delay to allow the goroutine to register the signal handler
 	time.Sleep(500 * time.Millisecond)
@@ -196,4 +231,28 @@ func TestSignalSIGTERM(t *testing.T) {
 	}
 
 	testListenForQuitSignal(syscall.SIGTERM)
+}
+
+func TestSignalSIGQUIT(t *testing.T) {
+	if os.Getenv("GO_TEST_PROCESS") != "1" {
+		return
+	}
+	// by default we do not listen for SIGQUIT so send it as signal we want to catch
+	testListenForQuitSignal(syscall.SIGQUIT, syscall.SIGQUIT)
+}
+
+func TestSignalSIGQUITunexpected(t *testing.T) {
+	if os.Getenv("GO_TEST_PROCESS") != "1" {
+		return
+	}
+	// by default we do not listen for SIGQUIT
+	testListenForQuitSignal(syscall.SIGQUIT)
+}
+
+func TestSignalSIGKILL(t *testing.T) {
+	if os.Getenv("GO_TEST_PROCESS") != "1" {
+		return
+	}
+	// by default we do not listen for SIGKILL, ask for it
+	testListenForQuitSignal(syscall.SIGKILL, syscall.SIGKILL)
 }
