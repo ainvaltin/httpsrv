@@ -80,7 +80,7 @@ func Test_Run(t *testing.T) {
 		}
 	})
 
-	listenerAndGetFunc := func(t *testing.T) (net.Listener, func() (*http.Response, error)) {
+	listenerAndGetFunc := func(t *testing.T) (net.Listener, func(path string) (*http.Response, error)) {
 		t.Helper()
 		ln, err := net.Listen("tcp", "127.0.0.1:0")
 		if err != nil {
@@ -88,8 +88,8 @@ func Test_Run(t *testing.T) {
 		}
 
 		c := http.Client{Timeout: 3 * time.Second}
-		f := func() (*http.Response, error) {
-			return c.Get(fmt.Sprintf("http://%s", ln.Addr().String()))
+		f := func(path string) (*http.Response, error) {
+			return c.Get(fmt.Sprintf("http://%s/%s", ln.Addr().String(), path))
 		}
 
 		return ln, f
@@ -102,7 +102,7 @@ func Test_Run(t *testing.T) {
 
 	t.Run("shutdown timeout is respected", func(t *testing.T) {
 		logF, logBuf := logErrFunc()
-		ln, getf := listenerAndGetFunc(t)
+		ln, doGet := listenerAndGetFunc(t)
 		defer ln.Close()
 
 		ctx, cancel := context.WithCancel(context.Background())
@@ -128,7 +128,7 @@ func Test_Run(t *testing.T) {
 		cliErr := make(chan error, 1)
 		go func() {
 			defer close(cliErr)
-			if rsp, err := getf(); err != nil {
+			if rsp, err := doGet(""); err != nil {
 				cliErr <- err
 			} else if rsp == nil {
 				cliErr <- fmt.Errorf("unexpectedly response is nil")
@@ -166,6 +166,177 @@ func Test_Run(t *testing.T) {
 			t.Errorf("unexpected content in error log:\n%s\n", s)
 		}
 	})
+
+	queryServer := func(doGet func(path string) (*http.Response, error), path string) error {
+		cliErr := make(chan error, 1)
+		go func() {
+			defer close(cliErr)
+			if rsp, err := doGet(path); err != nil {
+				cliErr <- err
+			} else if rsp == nil {
+				cliErr <- fmt.Errorf("unexpectedly response is nil")
+			} else {
+				cliErr <- fmt.Errorf("got response from server: %v", rsp.Status)
+			}
+		}()
+
+		select {
+		case <-time.After(3 * time.Second):
+			return fmt.Errorf("client request didn't return within timeout")
+		case err := <-cliErr:
+			return err
+		}
+	}
+
+	t.Run("no panic handler, service ignores panic", func(t *testing.T) {
+		logF, logBuf := logErrFunc()
+		ln, doGet := listenerAndGetFunc(t)
+		defer ln.Close()
+
+		ctx, cancel := context.WithCancel(context.Background())
+		srvErr := make(chan error, 1)
+		go func() {
+			mux := http.NewServeMux()
+			mux.HandleFunc("/panic", func(w http.ResponseWriter, req *http.Request) { panic("foobar") })
+			mux.HandleFunc("/hello", func(w http.ResponseWriter, req *http.Request) { fmt.Fprintf(w, "hello, world") })
+			srvErr <- Run(ctx,
+				http.Server{
+					WriteTimeout: 5 * time.Second,
+					Handler:      mux,
+					ErrorLog:     nil,
+				},
+				ShutdownTimeout(time.Second),
+				Listener(ln),
+				LogError(logF),
+			)
+		}()
+
+		err := queryServer(doGet, "panic")
+		if err == nil || err.Error() != fmt.Sprintf("Get \"http://%s/panic\": EOF", ln.Addr().String()) {
+			t.Errorf("unexpected client error: %v", err)
+		}
+		err = queryServer(doGet, "hello")
+		if err == nil || err.Error() != "got response from server: 200 OK" {
+			t.Errorf("unexpected client error: %v", err)
+		}
+
+		// stop the server
+		cancel()
+		select {
+		case <-time.After(3 * time.Second):
+			t.Error("runServer didn't return within timeout")
+		case err := <-srvErr:
+			// we stopped the server by cancelling the context so that's the error we expect
+			if err != context.Canceled {
+				t.Errorf("unexpected server error: %v", err)
+			}
+		}
+
+		// request exceeded shutdown timeout, server should not log error
+		// but the panic should be logged to the http.Server's ErrorLog!
+		if s := logBuf.String(); s != "" {
+			t.Errorf("unexpected content in error log:\n%s\n", s)
+		}
+	})
+
+	t.Run("using panic handler, http.ErrAbortHandler doesn't stop the server", func(t *testing.T) {
+		logF, logBuf := logErrFunc()
+		ln, doGet := listenerAndGetFunc(t)
+		defer ln.Close()
+
+		ctx, cancel := context.WithCancel(context.Background())
+		srvErr := make(chan error, 1)
+		go func() {
+			mux := http.NewServeMux()
+			mux.HandleFunc("/panic", func(w http.ResponseWriter, req *http.Request) { panic(http.ErrAbortHandler) })
+			mux.HandleFunc("/hello", func(w http.ResponseWriter, req *http.Request) { fmt.Fprintf(w, "hello, world") })
+			srvErr <- Run(ctx,
+				http.Server{
+					WriteTimeout: 5 * time.Second,
+					Handler:      mux,
+					ErrorLog:     nil,
+				},
+				ShutdownOnPanic(),
+				ShutdownTimeout(time.Second),
+				Listener(ln),
+				LogError(logF),
+			)
+		}()
+
+		err := queryServer(doGet, "panic")
+		if err == nil || err.Error() != "got response from server: 200 OK" {
+			t.Errorf("unexpected client error: %v", err)
+		}
+		err = queryServer(doGet, "hello")
+		if err == nil || err.Error() != "got response from server: 200 OK" {
+			t.Errorf("unexpected client error: %v", err)
+		}
+
+		// stop the server
+		cancel()
+		select {
+		case <-time.After(3 * time.Second):
+			t.Error("runServer didn't return within timeout")
+		case err := <-srvErr:
+			// we stopped the server by cancelling the context so that's the error we expect
+			if err != context.Canceled {
+				t.Errorf("unexpected server error: %v", err)
+			}
+		}
+
+		// request exceeded shutdown timeout, server should not log error
+		// but the panic should be logged to the http.Server's ErrorLog!
+		if s := logBuf.String(); s != "" {
+			t.Errorf("unexpected content in error log:\n%s\n", s)
+		}
+	})
+
+	t.Run("using panic handler, random panic stops the server", func(t *testing.T) {
+		logF, logBuf := logErrFunc()
+		ln, doGet := listenerAndGetFunc(t)
+		defer ln.Close()
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		srvErr := make(chan error, 1)
+		go func() {
+			mux := http.NewServeMux()
+			mux.HandleFunc("/panic", func(w http.ResponseWriter, req *http.Request) { panic("foobar") })
+			mux.HandleFunc("/hello", func(w http.ResponseWriter, req *http.Request) { fmt.Fprintf(w, "hello, world") })
+			srvErr <- Run(ctx,
+				http.Server{
+					WriteTimeout: 5 * time.Second,
+					Handler:      mux,
+					ErrorLog:     nil,
+				},
+				ShutdownOnPanic(),
+				ShutdownTimeout(time.Second),
+				Listener(ln),
+				LogError(logF),
+			)
+		}()
+
+		err := queryServer(doGet, "panic")
+		if err == nil || err.Error() != fmt.Sprintf("Get \"http://%s/panic\": EOF", ln.Addr().String()) {
+			t.Errorf("unexpected client error: %v", err)
+		}
+
+		// we expect that panic triggered by the request caused server to stop
+		select {
+		case <-time.After(3 * time.Second):
+			t.Error("runServer didn't return within timeout")
+		case err := <-srvErr:
+			if err == nil || err.Error() != "unhandled panic: foobar" {
+				t.Errorf("unexpected server error: %v", err)
+			}
+		}
+
+		// request exceeded shutdown timeout, server should not log error
+		// but the panic should be logged to the http.Server's ErrorLog!
+		if s := logBuf.String(); s != "" {
+			t.Errorf("unexpected content in error log:\n%s\n", s)
+		}
+	})
 }
 
 func Test_runServer(t *testing.T) {
@@ -183,6 +354,7 @@ func Test_runServer(t *testing.T) {
 			// the start func should block until stop signal is sent, we return error immediately
 			func() error { return fmt.Errorf("failed to start") },
 			func() error { stopCalled = true; return nil },
+			nil,
 			logF,
 		)
 		if err == nil {
@@ -211,6 +383,7 @@ func Test_runServer(t *testing.T) {
 				// server starts but after stop signal is sent it returns error
 				func() error { <-ctx.Done(); return fmt.Errorf("error from start") },
 				func() error { stopCalled = true; return nil },
+				nil,
 				logF,
 			)
 		}()
@@ -245,6 +418,7 @@ func Test_runServer(t *testing.T) {
 			done <- runServer(ctx,
 				func() error { <-ctx.Done(); return http.ErrServerClosed },
 				func() error { stopCalled = true; return fmt.Errorf("error from stop") },
+				nil,
 				logF,
 			)
 		}()
@@ -277,6 +451,7 @@ func Test_runServer(t *testing.T) {
 			done <- runServer(ctx,
 				func() error { <-ctx.Done(); return fmt.Errorf("error from start") },
 				func() error { return fmt.Errorf("error from stop") },
+				nil,
 				logF,
 			)
 		}()
@@ -298,6 +473,44 @@ func Test_runServer(t *testing.T) {
 		}
 	})
 
+	t.Run("shutdown signal sent to chan", func(t *testing.T) {
+		logF, buf := logErrFunc()
+		ctx, cancel := context.WithCancel(context.Background())
+		stopCalled := false
+
+		done := make(chan error, 1)
+		shutdownCh := make(chan error)
+		go func() {
+			done <- runServer(ctx,
+				// http.ErrServerClosed is not reported as this is "normal case"
+				func() error { <-ctx.Done(); return http.ErrServerClosed },
+				func() error { stopCalled = true; return nil },
+				shutdownCh,
+				logF,
+			)
+		}()
+
+		sdErr := fmt.Errorf("shutdown signal in chan")
+		shutdownCh <- sdErr
+		cancel() // so that startFunc returns
+
+		select {
+		case <-time.After(time.Second):
+			t.Error("runServer didn't return within timeout")
+		case err := <-done:
+			if err != sdErr {
+				t.Errorf("unexpected error: %v", err)
+			}
+		}
+
+		if s := buf.String(); s != "" {
+			t.Errorf("unexpected content in error log:\n%s\n", s)
+		}
+		if stopCalled {
+			t.Error("unexpectedly the stop func was called")
+		}
+	})
+
 	t.Run("no errors to log", func(t *testing.T) {
 		logF, buf := logErrFunc()
 		ctx, cancel := context.WithCancel(context.Background())
@@ -306,9 +519,10 @@ func Test_runServer(t *testing.T) {
 		done := make(chan error, 1)
 		go func() {
 			done <- runServer(ctx,
-				// http.ErrServerClosed is not reported as this is "normal case"
+				// http.ErrServerClosed is not reported as this is "normal exit error"
 				func() error { <-ctx.Done(); return http.ErrServerClosed },
 				func() error { stopCalled = true; return nil },
+				make(chan error),
 				logF,
 			)
 		}()

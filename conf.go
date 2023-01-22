@@ -15,6 +15,8 @@ type serverConf struct {
 
 	shutdownTO time.Duration // timeout for graceful shutdown
 
+	dieOnPanic bool
+
 	certFile, keyFile string // serve TLS if assigned
 
 	// function to log errors during setup/shutdown
@@ -26,13 +28,21 @@ var (
 	errUnassignedHandler = errors.New("misconfigured http server, no handlers attached - to fix use either Endpoints parameter or set the Handler field of the http.Server parameter of Run")
 )
 
+func (cfg *serverConf) validate() error {
+	if cfg.srv.Handler == nil {
+		return errUnassignedHandler
+	}
+
+	if cfg.srv.Addr == "" && cfg.l == nil {
+		return errUnassignedAddr
+	}
+
+	return nil
+}
+
 func (cfg *serverConf) listener() (net.Listener, error) {
 	if cfg.l != nil {
 		return cfg.l, nil
-	}
-
-	if cfg.srv.Addr == "" {
-		return nil, errUnassignedAddr
 	}
 
 	var err error
@@ -43,21 +53,16 @@ func (cfg *serverConf) listener() (net.Listener, error) {
 }
 
 func (cfg *serverConf) startFunc() func() error {
-	s := cfg.srv
-
-	if s.Handler == nil {
-		return func() error { return errUnassignedHandler }
-	}
-
 	l, err := cfg.listener()
 	if err != nil {
 		return func() error { return err }
 	}
 
-	if cfg.keyFile != "" || cfg.certFile != "" || (s.TLSConfig != nil && (len(s.TLSConfig.Certificates) > 0 || s.TLSConfig.GetCertificate != nil)) {
-		return func() error { return s.ServeTLS(l, cfg.certFile, cfg.keyFile) }
+	hasTLSConfig := cfg.srv.TLSConfig != nil && (len(cfg.srv.TLSConfig.Certificates) > 0 || cfg.srv.TLSConfig.GetCertificate != nil)
+	if cfg.keyFile != "" || cfg.certFile != "" || hasTLSConfig {
+		return func() error { return cfg.srv.ServeTLS(l, cfg.certFile, cfg.keyFile) }
 	}
-	return func() error { return s.Serve(l) }
+	return func() error { return cfg.srv.Serve(l) }
 }
 
 func (cfg *serverConf) stopFunc() func() error {

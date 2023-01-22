@@ -56,6 +56,18 @@ func ShutdownTimeout(to time.Duration) ServerParam {
 }
 
 /*
+ShutdownOnPanic instructs the http server to shut down when unhandled panic (except [http.ErrAbortHandler])
+escapes some handler.
+
+By default http.Server just logs the panic and carries on but some argue that in case of
+unhandled panic service should always die and new instance started - this option provides
+easy way to implement that behavior.
+*/
+func ShutdownOnPanic() ServerParam {
+	return serverParam{func(cfg *serverConf) { cfg.dieOnPanic = true }}
+}
+
+/*
 TLS allows to start the server using [http.Server.ServeTLS].
 Alternatively the server's [http.Server.TLSConfig] field can be assigned when passing it to [Run].
 */

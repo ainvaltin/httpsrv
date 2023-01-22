@@ -47,6 +47,14 @@ func Test_ServerParam(t *testing.T) {
 		}
 	})
 
+	t.Run("ShutdownOnPanic", func(t *testing.T) {
+		cfg := serverConf{}
+		ShutdownOnPanic().apply(&cfg)
+		if !cfg.dieOnPanic {
+			t.Errorf("unexpected dieOnPanic value %t", cfg.dieOnPanic)
+		}
+	})
+
 	t.Run("TLS", func(t *testing.T) {
 		cfg := serverConf{}
 		TLS("cert", "key").apply(&cfg)

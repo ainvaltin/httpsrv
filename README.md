@@ -51,9 +51,8 @@ Rules for a func starting a subprocess are:
 See the [example project](./examples/errgroup/) for more.
 
 ## Possible improvements
-- option to shutdown in case of unhandled panic - by default http.Server just logs the
-panic and carries on but some argue that in case of unhandled panic service should always
-die and new instance started...
+- support user defined panic handlers so that if none of the handlers mark panic as "handled"
+then service will be shut down (IOW configurable `ShutdownOnPanic`);
 - Drop the `LogError` parameter and use "wrapping multiple errors" instead (support coming with Go 1.20).
 - `ListenForQuitSignal` and `WaitWithTimeout` should probably live in a separate package as these
-functions are not httpsrv specific but general "errgroup pattern" helpers.
+functions are not `httpsrv` specific but general "errgroup pattern" helpers.
