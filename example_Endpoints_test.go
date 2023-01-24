@@ -26,9 +26,12 @@ func Example() {
 // in this simple example we do not use errgroup.
 func run(ctx context.Context, cfg Configuration) error {
 	// context to manage server's lifetime - when interrupt signal is sent the
-	// ctx will be cancelled and server stops
+	// ctx will be cancelled and server will shut down
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt)
-	defer stop()
+	go func() {
+		<-ctx.Done()
+		stop()
+	}()
 
 	s := &service{cfg: cfg}
 	return httpsrv.Run(ctx, cfg.HttpServer(), httpsrv.Listener(cfg.Listener()), httpsrv.Endpoints(s.endpoints()))

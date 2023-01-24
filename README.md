@@ -25,7 +25,10 @@ func main() {
 	})
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer stop()
+	go func() {
+		<-ctx.Done()
+		stop()
+	}()
 
 	err := httpsrv.Run(ctx, http.Server{Addr: "127.0.0.1:8080", Handler: mux})
 	fmt.Println("server exited:", err)
