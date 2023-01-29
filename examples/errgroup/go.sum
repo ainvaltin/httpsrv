@@ -1,2 +1,4 @@
+github.com/ainvaltin/httpsrv v0.1.2 h1:jsckLNm8oFFX1XOexhwelUkYJ6H9T8MR4A8K2YofgDE=
+github.com/ainvaltin/httpsrv v0.1.2/go.mod h1:UySPO+yJ0k5VBgQemTloTM0HUEMDwiF/h+94tI4H20s=
 golang.org/x/sync v0.1.0 h1:wsuoTGHzEhffawBOhz5CYhcrV4IdKZbEyZjBMuTp12o=
 golang.org/x/sync v0.1.0/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
