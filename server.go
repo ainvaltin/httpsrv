@@ -2,13 +2,13 @@ package httpsrv
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"sync"
 )
 
-func runServer(ctx context.Context, start, stop func() error, shutdown chan error, logErr func(string, ...any)) (rerr error) {
+func runServer(ctx context.Context, start, stop func() error, shutdown chan error) (rerr error) {
 	var m sync.Mutex
 	setReturnErr := func(err error) {
 		m.Lock()
@@ -16,7 +16,7 @@ func runServer(ctx context.Context, start, stop func() error, shutdown chan erro
 		if rerr == nil {
 			rerr = err
 		} else if err != nil {
-			logErr(err.Error())
+			rerr = errors.Join(rerr, err)
 		}
 	}
 
@@ -54,10 +54,7 @@ The srv parameter must have Addr and Handler fields assigned unless [Listener] a
 parameters are used to provide respective values.
 */
 func Run(ctx context.Context, srv http.Server, params ...ServerParam) error {
-	cfg := serverConf{
-		srv:    &srv,
-		logErr: func(format string, a ...any) { fmt.Fprintln(os.Stderr, fmt.Sprintf(format, a...)) },
-	}
+	cfg := serverConf{srv: &srv}
 	for _, p := range params {
 		p.apply(&cfg)
 	}
@@ -75,7 +72,6 @@ func Run(ctx context.Context, srv http.Server, params ...ServerParam) error {
 		cfg.startFunc(),
 		cfg.stopFunc(),
 		shutdown,
-		cfg.logErr,
 	)
 }
 

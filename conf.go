@@ -18,9 +18,6 @@ type serverConf struct {
 	dieOnPanic bool
 
 	certFile, keyFile string // serve TLS if assigned
-
-	// function to log errors during setup/shutdown
-	logErr func(format string, args ...any)
 }
 
 var (

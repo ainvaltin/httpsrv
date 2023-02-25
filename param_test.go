@@ -1,8 +1,6 @@
 package httpsrv
 
 import (
-	"bytes"
-	"fmt"
 	"net"
 	"net/http"
 	"testing"
@@ -63,37 +61,6 @@ func Test_ServerParam(t *testing.T) {
 		}
 		if cfg.keyFile != "key" {
 			t.Errorf("unexpected keyFile value: %s", cfg.keyFile)
-		}
-	})
-
-	logErrFunc := func() (func(string, ...any), *bytes.Buffer) {
-		buf := bytes.NewBuffer(nil)
-		return func(format string, a ...any) { fmt.Fprintln(buf, fmt.Sprintf(format, a...)) }, buf
-	}
-
-	t.Run("LogError", func(t *testing.T) {
-		logF, buf := logErrFunc()
-		cfg := serverConf{}
-		LogError(logF).apply(&cfg)
-		if cfg.logErr == nil {
-			t.Fatal("unexpectedly log func is not assigned")
-		}
-		cfg.logErr("test message")
-		if s := buf.String(); s != "test message\n" {
-			t.Errorf("unexpected message was logged:\n%s\n", s)
-		}
-	})
-
-	t.Run("LogError nil value is ignored", func(t *testing.T) {
-		logF, buf := logErrFunc()
-		cfg := serverConf{logErr: logF}
-		LogError(nil).apply(&cfg)
-		if cfg.logErr == nil {
-			t.Fatal("unexpectedly log func is not assigned")
-		}
-		cfg.logErr("test message")
-		if s := buf.String(); s != "test message\n" {
-			t.Errorf("unexpected message was logged:\n%s\n", s)
 		}
 	})
 }

@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.2.0 (25.02.2023)
+- **breaking change**: dropped `LogError` option in favour of `errors.Join`, **requires Go 1.20**!
+
 ## v0.1.2 (22.01.2023)
 - new `ShutdownOnPanic` option.
 
