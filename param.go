@@ -57,7 +57,8 @@ func ShutdownTimeout(to time.Duration) ServerParam {
 
 /*
 ShutdownOnPanic instructs the http server to shut down when unhandled panic (except [http.ErrAbortHandler])
-escapes some handler.
+escapes some handler. The http server's Close method will be used to shut down the server immediately, ie
+the [ShutdownTimeout] parameter is ignored.
 
 By default http.Server just logs the panic and carries on but some argue that in case of
 unhandled panic service should always die and new instance started - this option provides

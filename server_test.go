@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 )
@@ -168,17 +170,19 @@ func Test_Run(t *testing.T) {
 		ln, doGet := listenerAndGetFunc(t)
 		defer ln.Close()
 
+		logBuf := &strings.Builder{}
+
 		ctx, cancel := context.WithCancel(context.Background())
 		srvErr := make(chan error, 1)
 		go func() {
 			mux := http.NewServeMux()
-			mux.HandleFunc("/panic", func(w http.ResponseWriter, req *http.Request) { panic("foobar") })
+			mux.HandleFunc("/panic", func(w http.ResponseWriter, req *http.Request) { panic("oh-my-foobar") })
 			mux.HandleFunc("/hello", func(w http.ResponseWriter, req *http.Request) { fmt.Fprintf(w, "hello, world") })
 			srvErr <- Run(ctx,
 				http.Server{
 					WriteTimeout: 5 * time.Second,
 					Handler:      mux,
-					ErrorLog:     nil,
+					ErrorLog:     log.New(logBuf, "", log.LstdFlags),
 				},
 				ShutdownTimeout(time.Second),
 				Listener(ln),
@@ -187,6 +191,7 @@ func Test_Run(t *testing.T) {
 
 		err := queryServer(doGet, "panic")
 		expectError(t, err, fmt.Sprintf("Get \"http://%s/panic\": EOF", ln.Addr().String()))
+		// server should be up and able to respond
 		err = queryServer(doGet, "hello")
 		expectError(t, err, "got response from server: 200 OK")
 
@@ -199,11 +204,19 @@ func Test_Run(t *testing.T) {
 			// we stopped the server by cancelling the context so that's the error we expect
 			expectError(t, err, context.Canceled)
 		}
+
+		// the error message logged contains connection specific port so when checking for the
+		// expected message (http: panic serving 127.0.0.1:32854: oh-my-foobar) we ignore the port
+		if s := logBuf.String(); !strings.Contains(s, "http: panic serving 127.0.0.1:") || !strings.Contains(s, ": oh-my-foobar") {
+			t.Error("the log doesn't contain the expected error\n", s)
+		}
 	})
 
 	t.Run("using panic handler, http.ErrAbortHandler doesn't stop the server", func(t *testing.T) {
 		ln, doGet := listenerAndGetFunc(t)
 		defer ln.Close()
+
+		logBuf := &strings.Builder{}
 
 		ctx, cancel := context.WithCancel(context.Background())
 		srvErr := make(chan error, 1)
@@ -215,7 +228,7 @@ func Test_Run(t *testing.T) {
 				http.Server{
 					WriteTimeout: 5 * time.Second,
 					Handler:      mux,
-					ErrorLog:     nil,
+					ErrorLog:     log.New(logBuf, "", log.LstdFlags),
 				},
 				ShutdownOnPanic(),
 				ShutdownTimeout(time.Second),
@@ -237,11 +250,18 @@ func Test_Run(t *testing.T) {
 			// we stopped the server by cancelling the context so that's the error we expect
 			expectError(t, err, context.Canceled)
 		}
+
+		// there should be nothing in the errorlog
+		if s := logBuf.String(); s != "" {
+			t.Error("unexpectedly there is something in the error log:\n", s)
+		}
 	})
 
 	t.Run("using panic handler, random panic stops the server", func(t *testing.T) {
 		ln, doGet := listenerAndGetFunc(t)
 		defer ln.Close()
+
+		logBuf := &strings.Builder{}
 
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
@@ -254,7 +274,7 @@ func Test_Run(t *testing.T) {
 				http.Server{
 					WriteTimeout: 5 * time.Second,
 					Handler:      mux,
-					ErrorLog:     nil,
+					ErrorLog:     log.New(logBuf, "", log.LstdFlags),
 				},
 				ShutdownOnPanic(),
 				ShutdownTimeout(time.Second),
@@ -271,6 +291,10 @@ func Test_Run(t *testing.T) {
 			t.Error("runServer didn't return within timeout")
 		case err := <-srvErr:
 			expectError(t, err, "unhandled panic: foobar")
+		}
+
+		if s := logBuf.String(); s != "" {
+			t.Error("unexpectedly there is something in the error log:\n", s)
 		}
 	})
 }
