@@ -81,7 +81,7 @@ func installDieOnPanicHandler(srv *http.Server) chan error {
 	srv.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if r := recover(); r != nil {
-				if err, ok := r.(error); ok && err == http.ErrAbortHandler {
+				if err, ok := r.(error); ok && errors.Is(err, http.ErrAbortHandler) {
 					return
 				}
 				done <- fmt.Errorf("unhandled panic: %v", r)

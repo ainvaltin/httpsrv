@@ -257,6 +257,53 @@ func Test_Run(t *testing.T) {
 		}
 	})
 
+	t.Run("using panic handler, wrapped http.ErrAbortHandler doesn't stop the server", func(t *testing.T) {
+		ln, doGet := listenerAndGetFunc(t)
+		defer ln.Close()
+
+		logBuf := &strings.Builder{}
+
+		ctx, cancel := context.WithCancel(context.Background())
+		srvErr := make(chan error, 1)
+		go func() {
+			mux := http.NewServeMux()
+			mux.HandleFunc("/panic", func(w http.ResponseWriter, req *http.Request) {
+				panic(fmt.Errorf("I'm outta here: %w", http.ErrAbortHandler))
+			})
+			mux.HandleFunc("/hello", func(w http.ResponseWriter, req *http.Request) { fmt.Fprintf(w, "hello, world") })
+			srvErr <- Run(ctx,
+				http.Server{
+					WriteTimeout: 5 * time.Second,
+					Handler:      mux,
+					ErrorLog:     log.New(logBuf, "", log.LstdFlags),
+				},
+				ShutdownOnPanic(),
+				ShutdownTimeout(time.Second),
+				Listener(ln),
+			)
+		}()
+
+		err := queryServer(doGet, "panic")
+		expectError(t, err, "got response from server: 200 OK")
+		err = queryServer(doGet, "hello")
+		expectError(t, err, "got response from server: 200 OK")
+
+		// stop the server
+		cancel()
+		select {
+		case <-time.After(3 * time.Second):
+			t.Error("runServer didn't return within timeout")
+		case err := <-srvErr:
+			// we stopped the server by cancelling the context so that's the error we expect
+			expectError(t, err, context.Canceled)
+		}
+
+		// there should be nothing in the errorlog
+		if s := logBuf.String(); s != "" {
+			t.Error("unexpectedly there is something in the error log:\n", s)
+		}
+	})
+
 	t.Run("using panic handler, random panic stops the server", func(t *testing.T) {
 		ln, doGet := listenerAndGetFunc(t)
 		defer ln.Close()
