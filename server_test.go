@@ -21,7 +21,7 @@ func Test_Run(t *testing.T) {
 
 		done := make(chan error, 1)
 		go func() {
-			done <- Run(ctx, http.Server{Handler: http.NotFoundHandler()})
+			done <- Run(ctx, &http.Server{Handler: http.NotFoundHandler()})
 		}()
 
 		select {
@@ -39,7 +39,7 @@ func Test_Run(t *testing.T) {
 
 		done := make(chan error, 1)
 		go func() {
-			done <- Run(ctx, http.Server{Addr: "127.0.0.1:0"})
+			done <- Run(ctx, &http.Server{Addr: "127.0.0.1:0"})
 		}()
 
 		select {
@@ -57,7 +57,7 @@ func Test_Run(t *testing.T) {
 
 		done := make(chan error, 1)
 		go func() {
-			done <- Run(ctx, http.Server{Addr: "127.0.0.1:0", Handler: http.NotFoundHandler()}, TLS("foo.bar", "bar.foo"))
+			done <- Run(ctx, &http.Server{Addr: "127.0.0.1:0", Handler: http.NotFoundHandler()}, TLS("foo.bar", "bar.foo"))
 		}()
 
 		select {
@@ -92,7 +92,7 @@ func Test_Run(t *testing.T) {
 		srvErr := make(chan error, 1)
 		go func() {
 			srvErr <- Run(ctx,
-				http.Server{
+				&http.Server{
 					WriteTimeout: 5 * time.Second,
 					Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						// stop the server but keep the handler busy longer than the shutdown timeout
@@ -179,7 +179,7 @@ func Test_Run(t *testing.T) {
 			mux.HandleFunc("/panic", func(w http.ResponseWriter, req *http.Request) { panic("oh-my-foobar") })
 			mux.HandleFunc("/hello", func(w http.ResponseWriter, req *http.Request) { fmt.Fprintf(w, "hello, world") })
 			srvErr <- Run(ctx,
-				http.Server{
+				&http.Server{
 					WriteTimeout: 5 * time.Second,
 					Handler:      mux,
 					ErrorLog:     log.New(logBuf, "", log.LstdFlags),
@@ -225,7 +225,7 @@ func Test_Run(t *testing.T) {
 			mux.HandleFunc("/panic", func(w http.ResponseWriter, req *http.Request) { panic(http.ErrAbortHandler) })
 			mux.HandleFunc("/hello", func(w http.ResponseWriter, req *http.Request) { fmt.Fprintf(w, "hello, world") })
 			srvErr <- Run(ctx,
-				http.Server{
+				&http.Server{
 					WriteTimeout: 5 * time.Second,
 					Handler:      mux,
 					ErrorLog:     log.New(logBuf, "", log.LstdFlags),
@@ -272,7 +272,7 @@ func Test_Run(t *testing.T) {
 			})
 			mux.HandleFunc("/hello", func(w http.ResponseWriter, req *http.Request) { fmt.Fprintf(w, "hello, world") })
 			srvErr <- Run(ctx,
-				http.Server{
+				&http.Server{
 					WriteTimeout: 5 * time.Second,
 					Handler:      mux,
 					ErrorLog:     log.New(logBuf, "", log.LstdFlags),
@@ -318,7 +318,7 @@ func Test_Run(t *testing.T) {
 			mux.HandleFunc("/panic", func(w http.ResponseWriter, req *http.Request) { panic("foobar") })
 			mux.HandleFunc("/hello", func(w http.ResponseWriter, req *http.Request) { fmt.Fprintf(w, "hello, world") })
 			srvErr <- Run(ctx,
-				http.Server{
+				&http.Server{
 					WriteTimeout: 5 * time.Second,
 					Handler:      mux,
 					ErrorLog:     log.New(logBuf, "", log.LstdFlags),

@@ -37,6 +37,8 @@ following is equivalent to the previous example:
 
 	g.Go(func() error { return httpsrv.ListenForQuitSignal(ctx) })
 
+Deprecated: Use github.com/ainvaltin/wake instead.
+
 [errgroup]: https://pkg.go.dev/golang.org/x/sync/errgroup
 */
 func ListenForQuitSignal(ctx context.Context, sig ...os.Signal) error {
@@ -96,6 +98,8 @@ it is just that we do not wait for them to finish anymore!
 To use this function with [sync.WaitGroup] just wrap the g.Wait() call, ie
 
 	httpsrv.WaitWithTimeout(ctx, time.Second, func() error { g.Wait(); return nil })
+
+Deprecated: Use github.com/ainvaltin/wake instead.
 */
 func WaitWithTimeout(ctx context.Context, timeout time.Duration, wait func() error) error {
 	<-ctx.Done()

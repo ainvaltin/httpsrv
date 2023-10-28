@@ -61,7 +61,7 @@ type ServiceCfg interface {
 type Configuration interface {
 	ServiceCfg
 	Listener() net.Listener
-	HttpServer() http.Server
+	HttpServer() *http.Server
 }
 
 type srvConf struct {
@@ -75,8 +75,8 @@ func (c *srvConf) Listener() net.Listener {
 	return nil
 }
 
-func (c *srvConf) HttpServer() http.Server {
-	return http.Server{
+func (c *srvConf) HttpServer() *http.Server {
+	return &http.Server{
 		Addr:              "127.0.0.1:8080", // could read it from env etc
 		ReadTimeout:       3 * time.Second,
 		ReadHeaderTimeout: time.Second,

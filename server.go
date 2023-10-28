@@ -53,8 +53,8 @@ Server is stopped by cancelling the ctx.
 The srv parameter must have Addr and Handler fields assigned unless [Listener] and [Endpoints]
 parameters are used to provide respective values.
 */
-func Run(ctx context.Context, srv http.Server, params ...ServerParam) error {
-	cfg := serverConf{srv: &srv}
+func Run(ctx context.Context, srv *http.Server, params ...ServerParam) error {
+	cfg := serverConf{srv: srv}
 	for _, p := range params {
 		p.apply(&cfg)
 	}

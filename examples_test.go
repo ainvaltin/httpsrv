@@ -30,7 +30,7 @@ func ExampleRun() {
 		stop()
 	}()
 
-	err := httpsrv.Run(ctx, http.Server{Addr: "127.0.0.1:8080", Handler: mux})
+	err := httpsrv.Run(ctx, &http.Server{Addr: "127.0.0.1:8080", Handler: mux})
 	fmt.Println("server exited:", err)
 }
 
@@ -51,7 +51,7 @@ func ExampleListener() {
 	srvErr := make(chan error, 1)
 	go func() {
 		srvErr <- httpsrv.Run(ctx,
-			http.Server{Handler: http.NotFoundHandler()},
+			&http.Server{Handler: http.NotFoundHandler()},
 			httpsrv.Listener(ln),
 		)
 	}()

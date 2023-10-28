@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.3.0 (dd.10.2023)
+- **breaking change**: `Run` takes `*http.Server` (instead of `http.Server` ie pointer
+instead of value) as a parameter because http.Server now contains atomic values which
+may not be copied.
+- deprecate utility functions `WaitWithTimeout` and `ListenForQuitSignal` - these
+are moved to `github.com/ainvaltin/wake` package.
+
 ## v0.2.1 (03.03.2023)
 - detect `http.ErrAbortHandler` even when it is wrapped inside another error.
 
