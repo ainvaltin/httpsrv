@@ -14,6 +14,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/ainvaltin/httpsrv"
+	"github.com/ainvaltin/wake"
 )
 
 func main() {
@@ -30,7 +31,7 @@ func main() {
 func run(ctx context.Context, cfg Configuration) error {
 	g, ctx := errgroup.WithContext(ctx)
 
-	g.Go(func() error { return httpsrv.ListenForQuitSignal(ctx) })
+	g.Go(func() error { return wake.ListenForQuitSignal(ctx) })
 
 	g.Go(func() error {
 		s := &service{cfg: cfg}
@@ -88,7 +89,7 @@ type Configuration interface {
 	ServiceCfg
 	MaxTicks() int
 	Listener() net.Listener
-	HttpServer(http.Handler) http.Server
+	HttpServer(http.Handler) *http.Server
 }
 
 type srvConf struct {
@@ -106,8 +107,8 @@ func (c *srvConf) Listener() net.Listener {
 	return c.l
 }
 
-func (c *srvConf) HttpServer(h http.Handler) http.Server {
-	return http.Server{
+func (c *srvConf) HttpServer(h http.Handler) *http.Server {
+	return &http.Server{
 		Addr:              "127.0.0.1:8080", // could read it from env etc
 		Handler:           h,
 		ReadTimeout:       3 * time.Second,

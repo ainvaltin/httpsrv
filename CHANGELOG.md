@@ -1,6 +1,11 @@
 # Changelog
 
-## v0.3.0 (dd.10.2023)
+## v0.3.1 (11.11.2023)
+- dropped utility functions `WaitWithTimeout` and `ListenForQuitSignal` - these
+are now part of `github.com/ainvaltin/wake` package;
+- examples upgraded and updated.
+
+## v0.3.0 (28.10.2023)
 - **breaking change**: `Run` takes `*http.Server` (instead of `http.Server` ie pointer
 instead of value) as a parameter because http.Server now contains atomic values which
 may not be copied.

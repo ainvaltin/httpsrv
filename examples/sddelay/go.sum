@@ -1,4 +1,6 @@
-github.com/ainvaltin/httpsrv v0.1.2 h1:jsckLNm8oFFX1XOexhwelUkYJ6H9T8MR4A8K2YofgDE=
-github.com/ainvaltin/httpsrv v0.1.2/go.mod h1:UySPO+yJ0k5VBgQemTloTM0HUEMDwiF/h+94tI4H20s=
-golang.org/x/sync v0.1.0 h1:wsuoTGHzEhffawBOhz5CYhcrV4IdKZbEyZjBMuTp12o=
-golang.org/x/sync v0.1.0/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
+github.com/ainvaltin/httpsrv v0.3.0 h1:o+DYvQLUBh+hN/zJBLzi3hQOksQPkikL+zvBxZNh4Xg=
+github.com/ainvaltin/httpsrv v0.3.0/go.mod h1:hsvXrOXgWiWfGSYUCRRBlBYKPwLM1WWzGuqhp8dEcDY=
+github.com/ainvaltin/wake v0.0.0-20231028123503-7c92d4f31da8 h1:iw8QoRFgbZ6prVbqlnXxTw/9vr5NIIw6EfnMP575ZjA=
+github.com/ainvaltin/wake v0.0.0-20231028123503-7c92d4f31da8/go.mod h1:TGKv/vcwX27u9U1G32+BK5sa2lE7TESGTZCMY+M88AU=
+golang.org/x/sync v0.4.0 h1:zxkM55ReGkDlKSM+Fu41A+zmbZuaPVbGMzvvdUPznYQ=
+golang.org/x/sync v0.4.0/go.mod h1:FU7BRWz2tNW+3quACPkgCx/L+uEAv1htQ0V83Z9Rj+Y=

@@ -19,6 +19,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/ainvaltin/httpsrv"
+	"github.com/ainvaltin/wake"
 )
 
 func main() {
@@ -47,7 +48,7 @@ func main() {
 func run(ctx context.Context, cfg Configuration) error {
 	g, ctx := errgroup.WithContext(ctx)
 
-	g.Go(func() error { return httpsrv.ListenForQuitSignal(ctx) })
+	g.Go(func() error { return wake.ListenForQuitSignal(ctx) })
 
 	g.Go(func() error {
 		s := service{}
@@ -102,7 +103,7 @@ func (s *service) endpoints(statusHandler http.Handler) http.Handler {
 
 type Configuration interface {
 	Listener() net.Listener
-	HttpServer(http.Handler) http.Server
+	HttpServer(http.Handler) *http.Server
 	ShutdownDelay() time.Duration
 }
 
@@ -142,8 +143,8 @@ func (c *srvConf) Listener() net.Listener { return c.srvLn }
 
 func (c *srvConf) ShutdownDelay() time.Duration { return c.shutdownDelay }
 
-func (c *srvConf) HttpServer(h http.Handler) http.Server {
-	return http.Server{
+func (c *srvConf) HttpServer(h http.Handler) *http.Server {
+	return &http.Server{
 		Handler:           h,
 		ReadTimeout:       3 * time.Second,
 		ReadHeaderTimeout: time.Second,
